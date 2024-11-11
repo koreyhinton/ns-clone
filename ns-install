@@ -34,11 +34,15 @@ if [[ $found -gt 0 ]]; then
             exit $((dot_ns_ec+git_ec))
         fi
         . "${src_dir}/ns-clone.profile"
+        prof_ec=$?
+        if [[ $prof_ec -gt 0 ]]; then
+            found=0
+        fi
     fi
     if [[ -z "$NS_CLONE_VERSION" ]]; then
-        found=1
-    else
         found=0
+    else
+        found=1
     fi
 fi
 
@@ -46,5 +50,11 @@ if [[ $found -eq 0 ]]; then
     echo "ns-clone installation failed and was not able to successfully run: ${src_dir}/ns-clone.profile" 1>&2
     exit 1
 else
+    wcl=$(cat "${src_dir}/ns-clone.paths" | wc -l)
+    if [[ $wcl -eq 0 ]]; then
+        ns_script=$(which ns)
+        ns_dir=$(dirname "$ns_script")
+        echo "export NS_PATH=\"${ns_dir}/ns_bin\"" >>"${src_dir}/ns-clone.paths"
+    fi
     echo "ns-clone version ${NS_CLONE_VERSION} installation confirmed."
 fi

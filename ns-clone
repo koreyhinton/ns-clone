@@ -32,6 +32,11 @@ do
     fullpath=$(realpath "$f")
     fullpath_dir="${fullpath%/*}"
 
+    in_dot_git_dir=$(echo "$fullpath_dir" | grep '/\.git/' | wc -l)
+    if [[ ${in_dot_git_dir} -gt 0 ]]; then
+        continue
+    fi
+
     if [[ $is_executable -gt 0 && $is_ascii -gt 0 ]]; then
         # HANDLE PATHS
         if [[ -z "$paths" ]]; then
@@ -60,7 +65,7 @@ do
 done
 
 if [[ -n "$paths" ]]; then
-    echo "export NS_PATH=\"\${NS_PATH}:${paths}\"" >> "${src_dir}/ns-clone.paths"
+    echo "NS_PATH=\"\${NS_PATH}:${paths}\"" >> "${src_dir}/ns-clone.paths"
 fi
 if [[ "$repo" == "dot-ns" ]]; then
     echo "export PATH=\"\${PATH}:${paths}\"" >> "${src_dir}/ns-clone.paths"

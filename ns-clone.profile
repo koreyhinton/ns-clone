@@ -14,19 +14,16 @@ ec1=$?
 . "${src_dir}/ns-clone.paths"
 ec2=$?
 
-. "${src_dir}/ns-clone.aliases"
-ec3=$?
-
-has_ns_shell_pid=0
+needs_ns_shell_pid=1
 if [[ -z "$NS_SHELL_PID" ]]; then
     . ns init
 fi
 if [[ -n "$NS_SHELL_PID" ]]; then
-    has_ns_shell_pid=1
+    needs_ns_shell_pid=0
+    export NS_LAST_CMD=
 fi
 
-
-((ec=ec0+ec1+ec2+ec3+has_ns_shell_pid))
+((ec=ec0+ec1+ec2+has_ns_shell_pid))
 
 if [[ $ec -eq 0 ]]; then
     export NS_CLONE_VERSION=0.1
