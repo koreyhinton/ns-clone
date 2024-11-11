@@ -1,0 +1,69 @@
+#!/bin/bash
+
+src="${BASH_SOURCE[0]}"
+src_full=$(realpath "$src")
+src_dir="${src_full%/*}"
+
+url=
+ns=
+if [[ -z "$2" ]]; then
+    url="$1"
+else
+    ns="$1"
+    url="$2"
+fi
+
+git clone "$url"
+ec0=$?
+
+repo=$(basename "$url")
+repo="${repo%.git}"
+
+paths=
+for f in `find "${repo}/" -type f`
+do
+    is_ascii=$(file "$f" | grep -i ascii | wc -l)
+    is_executable=0
+    if [[ -x "$f" ]]; then
+        is_executable=1
+    fi
+
+    cmd=$(basename "$f")
+    fullpath=$(realpath "$f")
+    fullpath_dir="${fullpath%/*}"
+
+    if [[ $is_executable -gt 0 && $is_ascii -gt 0 ]]; then
+        # HANDLE PATHS
+        if [[ -z "$paths" ]]; then
+            paths="$fullpath_dir"
+        else
+            pathed=0
+            saveIFS="$IFS"
+            IFS=':'
+            for p in $paths
+            do
+                if [[ "$p" == "$fullpath_dir" ]]; then
+                    pathed=1
+                fi
+            done
+            IFS="$saveIFS"
+            if [[ $pathed -eq 0 ]]; then
+                paths="${paths}:${fullpath_dir}"
+            fi
+        fi
+    fi
+
+    if [[ $is_executable -gt 0 && $is_ascii -gt 0 && -n "$ns" ]]; then
+        # HANDLE NAMESPACE ALIAS
+        echo "alias ${ns}-${cmd}='. ns run \"${fullpath}\"'" >>"${src_dir}/ns-clone.aliases"
+    fi
+done
+
+if [[ -n "$paths" ]]; then
+    echo "export NS_PATH=\"\${NS_PATH}:${paths}\"" >> "${src_dir}/ns-clone.paths"
+fi
+if [[ "$repo" == "dot-ns" ]]; then
+    echo "export PATH=\"\${PATH}:${paths}\"" >> "${src_dir}/ns-clone.paths"
+fi
+
+exit $((ec0))

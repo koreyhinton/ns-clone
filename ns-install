@@ -1,0 +1,50 @@
+
+
+src="${BASH_SOURCE[0]}"
+src_full=$(realpath "$src")
+src_dir="${src_full%/*}"
+# clone_script="${src_dir}/ns-clone"
+
+found=$(grep "^\. ${src_dir}/ns-clone.profile\$" "${HOME}/.bashrc" | wc -l)
+if [[ $found -eq 0 ]]; then
+    echo ". ${src_dir}/ns-clone.profile" >>~/.bashrc
+fi
+found=$(grep "^\. ${src_dir}/ns-clone.profile\$" "${HOME}/.bashrc" | wc -l)
+if [[ $found -gt 0 ]]; then
+    if [[ -z "$NS_CLONE_VERSION" ]]; then
+        which git 1>/dev/null 2>/dev/null
+        git_ec=$?
+
+        which ns 1>/dev/null 2>/dev/null
+        if [[ $? -gt 0 ]]; then
+            cd "${src_dir}/repos"
+            ../ns-clone https://github.com/koreyhinton/dot-ns.git
+            clone_ec=$?
+            cd ../
+            if [[ $clone_ec -gt 0 ]]; then
+                echo "ns-clone to install dot-ns failed for script: ${src_dir}/ns-clone" 1>&2
+                exit $clone_ec
+            fi
+        fi
+        which ns 1>/dev/null 2>/dev/null
+        dot_ns_ec=$?
+
+        if [[ $((dot_ns_ec+git_ec)) -gt 0 ]]; then
+            echo "Failed to establish ns-clone dependencies (ns and/or git)" 1>&2
+            exit $((dot_ns_ec+git_ec))
+        fi
+        . "${src_dir}/ns-clone.profile"
+    fi
+    if [[ -z "$NS_CLONE_VERSION" ]]; then
+        found=1
+    else
+        found=0
+    fi
+fi
+
+if [[ $found -eq 0 ]]; then
+    echo "ns-clone installation failed and was not able to successfully run: ${src_dir}/ns-clone.profile" 1>&2
+    exit 1
+else
+    echo "ns-clone version ${NS_CLONE_VERSION} installation confirmed."
+fi
