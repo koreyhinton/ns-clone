@@ -5,6 +5,8 @@ src_full=$(realpath "$src")
 src_dir="${src_full%/*}"
 # clone_script="${src_dir}/ns-clone"
 
+touch "${HOME}/.bashrc"
+
 found=$(grep "^\. ${src_dir}/ns-clone.profile\$" "${HOME}/.bashrc" | wc -l)
 if [[ $found -eq 0 ]]; then
     echo ". ${src_dir}/ns-clone.profile" >>~/.bashrc
