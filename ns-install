@@ -28,8 +28,16 @@ if [[ $found -gt 0 ]]; then
                 exit $clone_ec
             fi
         fi
-        which ns 1>/dev/null 2>/dev/null
-        dot_ns_ec=$?
+        # Alternative to:
+        #     which ns 1>/dev/null 2>/dev/null
+        #     dot_ns_ec=$?
+        # since parent process (caller) has not sourced ns-clone.profile yet
+        dot_ns_ec=1
+        calls_profile=$(grep "\. .*/ns-clone\.profile" "${HOME}/.bashrc" |wc -l)
+        exports_ns_path=$(grep "^export PATH" "${src_dir}/ns-clone.paths" |wc -l)
+        if [[ ${calls_profile} -gt 0 && ${exports_ns_path} -gt 0 && -x "${src_dir}/repos/dot-ns/ns" ]]; then
+            dot_ns_ec=0
+        fi
 
         if [[ $((dot_ns_ec+git_ec)) -gt 0 ]]; then
             echo "Failed to establish ns-clone dependencies (ns and/or git)" 1>&2
@@ -54,7 +62,10 @@ if [[ $found -eq 0 ]]; then
 else
     wcl=$(cat "${src_dir}/ns-clone.paths" | wc -l)
     if [[ $wcl -eq 0 ]]; then
-        ns_script=$(which ns)
+        # Alternative to:
+        #     ns_script=$(which ns)
+        # since parent process (caller) has not sourced ns-clone.profile yet
+        ns_script="${src_dir}/repos/dot-ns/ns"
         ns_dir=$(dirname "$ns_script")
         echo "export NS_PATH=\"${ns_dir}/ns_bin\"" >>"${src_dir}/ns-clone.paths"
     fi
