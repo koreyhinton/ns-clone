@@ -1,4 +1,4 @@
-
+#!/bin/bash
 
 src="${BASH_SOURCE[0]}"
 src_full=$(realpath "$src")
