@@ -4,6 +4,8 @@ src="${BASH_SOURCE[0]}"
 src_full=$(realpath "$src")
 src_dir="${src_full%/*}"
 
+. "${src_dir}/ns-clone.profile"  # in case .bashrc was not invoked (idempotent)
+
 url=
 ns=
 if [[ -z "$2" ]]; then

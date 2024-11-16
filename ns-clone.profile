@@ -4,6 +4,10 @@ src="${BASH_SOURCE[0]}"
 src_full=$(realpath "$src")
 src_dir="${src_full%/*}"
 
+if [[ "${NS_CLONE_VERSION}" == "0.1" ]]; then
+    return  # don't set variables twice
+fi
+
 . "${src_dir}/ns-clone.aliases"
 ec0=$?
 
