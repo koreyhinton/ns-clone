@@ -27,6 +27,10 @@ if [[ -n "$NS_SHELL_PID" ]]; then
     export NS_LAST_CMD=
 fi
 
+if [[ "${NS_PATH:0:1}" == ":" ]]; then
+    export NS_PATH="${NS_PATH:1}"
+fi
+
 ((ec=ec0+ec1+ec2+has_ns_shell_pid))
 
 if [[ $ec -eq 0 ]]; then
