@@ -13,14 +13,17 @@ The following dependencies need to be installed first before attempting the inst
 ## install ns-clone - in bash shell
 
 ```sh
+
+# change directory to a dedicated folder to store the ns-clone repo, ie:
+#     cd ~/repos
+
 git clone https://github.com/koreyhinton/ns-clone.git
 
 ./ns-clone/ns-install
-# To complete the install, either:
-#     1) start a new shell session
-# Or:
-#     2) source the ns-clone.profile file for your current session
-#            . ./ns-clone/ns-clone.profile
+
+# Installation is ready after a new bash shell is opened:
+
+bash
 ```
 
 > Before running the install, be sure your current working directory is in a dedicated folder where there doesn't already exist a folder matching the ns-clone repository name
@@ -35,12 +38,14 @@ Run the ns-clone command by providing 2 arguments:
 The cloned repository's dot-ns bash files will be aliased with the namespace prefix. E.g., add => `sv-add`.
 
 ```sh
+bash  # must be in a bash shell
+# change directory to a dedicated folder to host repositories, ie:
+#     cd ~/repos/ns-clone/repos
 ns-clone sv https://github.com/koreyhinton/sv.git
-# To complete the install, either:
-#     1) start a new shell session
-# Or:
-#     2) source the ns-clone.profile file for your current session
-#            . ./ns-clone/ns-clone.profile
+
+# restart the bash shell:
+exit
+bash
 ```
 
 > Before running ns-clone, be sure your current working directory is in a dedicated folder where there doesn't already exist a folder matching the repository name (e.g., sv/)
