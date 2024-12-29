@@ -3,71 +3,79 @@
 src="${BASH_SOURCE[0]}"
 src_full=$(realpath "$src")
 src_dir="${src_full%/*}"
-# clone_script="${src_dir}/ns-clone"
 
-touch "${HOME}/.bashrc"
+dot_ns_script="${src_dir}/repos/dot-ns/ns"
+dot_ns_dir=$(dirname "$dot_ns_script")
 
-found=$(grep "^\. ${src_dir}/ns-clone.profile\$" "${HOME}/.bashrc" | wc -l)
-if [[ $found -eq 0 ]]; then
-    echo ". ${src_dir}/ns-clone.profile" >>~/.bashrc
+# ensure ns-clone.profile is sourced in .bashrc
+if [[ ! -f "${HOME}/.bashrc" ]]; then
+    touch "${HOME}/.bashrc"
 fi
-found=$(grep "^\. ${src_dir}/ns-clone.profile\$" "${HOME}/.bashrc" | wc -l)
-if [[ $found -gt 0 ]]; then
-    if [[ -z "$NS_CLONE_VERSION" ]]; then
-        which git 1>/dev/null 2>/dev/null
-        git_ec=$?
+prof="${src_dir}/ns-clone.profile"
+if grep -q "^\. ${prof}\$" "${HOME}/.bashrc"
+then    :
+else    echo ". ${prof}" >>"${HOME}/.bashrc"
+fi
 
-        which ns 1>/dev/null 2>/dev/null
-        if [[ $? -gt 0 ]]; then
+# if profile link is ensured, then ensure other installation components
+if [[ $? -eq 0 ]];  then
+    if [[ -z "$NS_CLONE_VERSION" ]]; then
+        if ! command git 2>/dev/null; then
+            echo "Installation failure: failed to install due to missing dependency (git)" 1>&2
+            exit 1
+        fi
+
+        if ! command ns 2>/dev/null; then
             cd "${src_dir}/repos"
-            ../ns-clone https://github.com/koreyhinton/dot-ns.git
-            clone_ec=$?
-            cd ../
-            if [[ $clone_ec -gt 0 ]]; then
-                echo "ns-clone to install dot-ns failed for script: ${src_dir}/ns-clone" 1>&2
-                exit $clone_ec
+            if ! ../ns-clone https://github.com/koreyhinton/dot-ns.git; then
+                echo "Installation failure: dot-ns dependency installation failed (script: ${src_dir}/ns-clone)" 1>&2
+                exit 2
             fi
+            cd ../
         fi
+
+        # ns-clone of dot-ns should have added a PATH export for the dot-ns
+        # repository directory
+
         # Alternative to:
-        #     which ns 1>/dev/null 2>/dev/null
-        #     dot_ns_ec=$?
-        # since parent process (caller) has not sourced ns-clone.profile yet
-        dot_ns_ec=1
-        calls_profile=$(grep "\. .*/ns-clone\.profile" "${HOME}/.bashrc" |wc -l)
-        exports_ns_path=$(grep "^export PATH" "${src_dir}/ns-clone.paths" |wc -l)
-        if [[ ${calls_profile} -gt 0 && ${exports_ns_path} -gt 0 && -x "${src_dir}/repos/dot-ns/ns" ]]; then
-            dot_ns_ec=0
+        #     if command ns 2>/dev/null;
+        # but since parent process (caller) has not sourced ns-clone.profile yet
+        # we won't be able to find the command yet, so just check it would be
+        # in the path when ns-clone.paths is sourced (next shell session).
+        dot_paths="${src_dir}/ns-clone.paths"
+        if [[ -x "$dot_ns_script" ]] && grep -q "^export PATH" "$dot_paths"
+        then :
+        else
+            echo "Installation failure: failed to establish ns-clone dependencies (ns)" 1>&2
+            exit 3
         fi
 
-        if [[ $((dot_ns_ec+git_ec)) -gt 0 ]]; then
-            echo "Failed to establish ns-clone dependencies (ns and/or git)" 1>&2
-            exit $((dot_ns_ec+git_ec))
+        if ! . "${prof}"; then
+            echo "Installation failure: unexpected failure when sourcing login script: ${prof}" 1>&2
+            exit 4
         fi
-        . "${src_dir}/ns-clone.profile"
-        prof_ec=$?
-        if [[ $prof_ec -gt 0 ]]; then
-            found=0
-        fi
-    fi
-    if [[ -z "$NS_CLONE_VERSION" ]]; then
-        found=0
-    else
-        found=1
-    fi
-fi
 
-if [[ $found -eq 0 ]]; then
-    echo "ns-clone installation failed and was not able to successfully run: ${src_dir}/ns-clone.profile" 1>&2
-    exit 1
+        # the dot profile run above will not apply to the parent/caller
+
+        if [[ -z "$NS_CLONE_VERSION" ]]; then
+            echo "Installation failure: the sourced login script appears to be configured but doesn't appear to have succeeded in running all the way through (script: ${prof})" 1>&2
+            exit 5
+        fi
+    fi
 else
-    wcl=$(cat "${src_dir}/ns-clone.paths" | wc -l)
-    if [[ $wcl -eq 0 ]]; then
-        # Alternative to:
-        #     ns_script=$(which ns)
-        # since parent process (caller) has not sourced ns-clone.profile yet
-        ns_script="${src_dir}/repos/dot-ns/ns"
-        ns_dir=$(dirname "$ns_script")
-        echo "export NS_PATH=\"${ns_dir}/ns_bin\"" >>"${src_dir}/ns-clone.paths"
-    fi
-    echo "ns-clone version ${NS_CLONE_VERSION} installation confirmed."
+    echo "Installation failure: the .bashrc config file had an unexpected failure on write (script: ${HOME}/.bashrc)" 1>&2
+    exit 6
 fi
+
+if [[ ! -s "${src_dir}/ns-clone.paths" ]]; then
+    # Alternative to:
+    #     ns_script=$(which ns)
+    # since parent process (caller) has not sourced ns-clone.profile yet    
+    echo "export NS_PATH=\"${dot_ns_dir}/ns_bin\"" >>"${src_dir}/ns-clone.paths"
+    if [[ $? -gt 0 ]]; then
+        echo "Installation failure: unexpected failure when writing to the paths file (file: ${src_dir}/ns-clone.paths)" 1>&2
+        exit 7
+    fi
+fi
+
+echo "ns-clone version ${NS_CLONE_VERSION} installation confirmed."
