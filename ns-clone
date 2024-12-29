@@ -15,8 +15,10 @@ else
     url="$2"
 fi
 
-git clone "$url"
-ec0=$?
+if ! git clone "$url"; then
+    echo "Clone failure: unable to run git clone for url (url: ${url})" 1>&2
+    exit 1
+fi
 
 repo=$(basename "$url")
 repo="${repo%.git}"
@@ -62,7 +64,8 @@ do
 
     if [[ $is_executable -gt 0 && $is_ascii -gt 0 && -n "$ns" ]]; then
         # HANDLE NAMESPACE ALIAS
-        echo "alias ${ns}-${cmd}='. ns run \"${fullpath}\"'" >>"${src_dir}/ns-clone.aliases"
+        echo "${ns}-${cmd}() { . ns run \"${fullpath}\"; }" >>"${src_dir}/ns-clone.aliases"
+        echo "export -f ${ns}-${cmd}" >>"${src_dir}/ns-clone.aliases"
     fi
 done
 
@@ -72,5 +75,3 @@ fi
 if [[ "$repo" == "dot-ns" ]]; then
     echo "export PATH=\"\${PATH}:${paths}\"" >> "${src_dir}/ns-clone.paths"
 fi
-
-exit $((ec0))
